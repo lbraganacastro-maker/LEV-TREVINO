@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Levantamiento de mobiliario</title>
+<meta name="theme-color" content="#2F4A63">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Levantamiento">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EEF1F4; --panel:#FFFFFF; --ink:#18222E; --muted:#5C6B7A; --line:#D3DAE1;
+  --tag:#F2C230; --tag-ink:#18222E; --steel:#2F4A63; --on-steel:#FFFFFF; --danger:#B3261E; --ok:#1F7A4D;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#12181F; --panel:#1B232C; --ink:#E7ECF1; --muted:#98A6B4; --line:#2E3A46;
+  --tag:#F2C230; --tag-ink:#18222E; --steel:#8DB3D6; --on-steel:#12181F; --danger:#F2847C; --ok:#6CCB9A;
+}}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 Barlow,system-ui,-apple-system,"Segoe UI",sans-serif}
+h1,h2,h3{font-family:"Barlow Condensed",Barlow,system-ui,sans-serif;font-weight:700;margin:0;letter-spacing:.01em}
+button,input,select{font:inherit;color:inherit}
+.wrap{max-width:640px;margin:0 auto;padding:0 14px 110px}
+header.top{position:sticky;top:0;z-index:5;background:var(--bg);padding:12px 0 10px;border-bottom:1px solid var(--line);margin-bottom:14px}
+.row{display:flex;gap:10px;align-items:center}
+.between{justify-content:space-between}
+.top h1{font-size:26px}
+.sub{color:var(--muted);font-size:14px}
+.btn{border:0;border-radius:10px;padding:11px 16px;background:var(--steel);color:var(--on-steel);font-weight:600;cursor:pointer;min-height:44px}
+.btn.tag{background:var(--tag);color:var(--tag-ink)}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.danger{background:transparent;color:var(--danger);border:1px solid var(--danger)}
+.btn:disabled{opacity:.5}
+.btn:focus-visible,input:focus-visible,select:focus-visible,.card:focus-visible{outline:3px solid var(--tag);outline-offset:2px}
+.fab{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:6;box-shadow:0 4px 14px rgba(0,0,0,.25);border-radius:14px;padding:14px 20px;font-size:17px}
+select.filter{width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--panel);margin-bottom:12px;min-height:44px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px;display:flex;gap:12px;align-items:center;cursor:pointer;width:100%;text-align:left}
+.label-tag{background:var(--tag);color:var(--tag-ink);font-family:"Barlow Condensed",sans-serif;font-weight:700;border-radius:6px;padding:4px 8px;font-size:18px;white-space:nowrap}
+.card .meta{flex:1;min-width:0}
+.card .meta b{display:block;font-weight:600}
+.card .meta span{color:var(--muted);font-size:14px}
+.prog{font-family:"Barlow Condensed",sans-serif;font-size:20px;font-weight:700;color:var(--steel)}
+.prog.done{color:var(--ok)}
+.store-h{font-size:20px;margin:18px 0 8px;color:var(--steel)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.full{grid-column:1/-1}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:14px;color:var(--muted)}
+label.f input,label.f select{padding:10px;border-radius:9px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-size:17px;min-height:46px;width:100%}
+.seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.seg button{flex:1;border:0;background:var(--bg);padding:10px 0;min-height:46px;font-weight:600;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--tag);color:var(--tag-ink)}
+.elev{display:flex;justify-content:center;padding:6px 0}
+.elev svg{max-width:100%;height:190px}
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.tr{background:var(--bg);border:1px solid var(--line);border-radius:10px;overflow:hidden;cursor:pointer;text-align:left;padding:0}
+.tr img,.tr .noimg{width:100%;aspect-ratio:3/4;object-fit:cover;display:block;background:var(--line)}
+.tr .noimg{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px}
+.tr div.t{padding:6px 8px;font-size:13px}
+.tr div.t b{font-family:"Barlow Condensed",sans-serif;font-size:17px}
+.photo-drop{width:100%;border:2px dashed var(--line);border-radius:12px;background:var(--bg);min-height:180px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;cursor:pointer;overflow:hidden;padding:0}
+.photo-drop img{width:100%;max-height:340px;object-fit:contain;display:block}
+.inline{display:flex;gap:8px}
+.inline input{flex:1}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;z-index:20;font-size:15px;max-width:90vw}
+.notice{background:var(--panel);border-left:4px solid var(--tag);padding:12px 14px;border-radius:8px;margin-bottom:14px;font-size:15px}
+.empty{text-align:center;color:var(--muted);padding:40px 10px}
+.empty h2{color:var(--ink);font-size:24px;margin-bottom:6px}
+.back{background:none;border:0;color:var(--steel);font-weight:600;padding:6px 0;cursor:pointer;min-height:44px}
+dialog{border:0;border-radius:16px;padding:0;width:min(560px,96vw);max-height:92vh;background:var(--panel);color:var(--ink)}
+dialog::backdrop{background:rgba(10,15,20,.55)}
+.dlg{padding:16px;overflow:auto;max-height:92vh}
+.check{display:flex;gap:10px;align-items:center;font-size:16px;min-height:44px}
+.check input{width:22px;height:22px}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.actions .btn{flex:1}
+.search{width:100%;padding:12px;border-radius:9px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-size:17px;margin-bottom:8px}
+.catlist{max-height:58vh;overflow-y:auto;border:1px solid var(--line);border-radius:9px;-webkit-overflow-scrolling:touch}
+.catopt{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;text-align:left;padding:12px;border:0;border-bottom:1px solid var(--line);background:var(--panel);cursor:pointer;min-height:48px;font-size:16px}
+.catopt small{color:var(--muted);white-space:nowrap}
+.catopt.on{background:var(--tag);color:var(--tag-ink)}
+.pickbtn{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;padding:10px;border-radius:9px;border:1px solid var(--line);background:var(--bg);min-height:46px;font-size:17px;text-align:left;cursor:pointer}
+.pickbtn small{color:var(--muted)}
+.pickbtn .ph{color:var(--muted)}
+.sec{font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:16px 0 6px}
+.pill{display:inline-block;border:0;border-radius:99px;padding:3px 10px;font-size:13px;font-weight:600;line-height:1.5}
+.pill.on{background:#DDF1E6;color:#1F7A4D}.pill.off{background:#F6E0DE;color:#B3261E}
+.pill.warn{background:var(--tag);color:var(--tag-ink);cursor:pointer}.pill.err{background:#B3261E;color:#fff;cursor:pointer}
+.statusbar{display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap}
+.mini{font-size:11px;font-weight:600;background:var(--tag);color:var(--tag-ink);border-radius:4px;padding:1px 5px;vertical-align:middle}
+.pend{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.perr{color:var(--danger);font-size:14px}
+</style>
+<script>
+window.addEventListener("error",function(e){
+  var s=document.getElementById("status");
+  if(s) s.innerHTML='<div class="notice"><b>Error en la app:</b> '+String(e.message||e).replace(/[<]/g,"&lt;")+' (linea '+(e.lineno||"?")+')</div>';
+});
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="row between">
+      <div>
+        <h1>Levantamiento de mobiliario</h1>
+        <div class="sub" id="counts">Cargando&hellip;</div>
+        <div class="statusbar"><span class="pill on" id="net">En l&iacute;nea</span><button class="pill warn" id="btnPend" type="button" hidden></button></div>
+      </div>
+      <button class="btn ghost" id="btnRefresh" type="button">Actualizar</button>
+    </div>
+  </header>
+  <div id="status"></div>
+  <main id="app"></main>
+</div>
+<button class="btn tag fab" id="fab" type="button">Nuevo mueble</button>
+
+<dialog id="dlgTramo"><div class="dlg" id="dlgTramoBody"></div></dialog>
+<dialog id="dlgPin"><div class="dlg">
+  <h2 style="font-size:24px;margin-bottom:10px">PIN de acceso</h2>
+  <label class="f">Escribe el PIN de tu equipo<input id="pinIn" inputmode="numeric" type="password" autocomplete="off"></label>
+  <div class="actions"><button class="btn" id="pinOk" type="button">Entrar</button></div>
+</div></dialog>
+<dialog id="dlgCat"><div class="dlg">
+  <div class="row between" style="margin-bottom:8px"><h2 style="font-size:22px" id="pkTitle">Elegir</h2><button class="btn ghost" id="catClose" type="button">Cerrar</button></div>
+  <input id="catQ" class="search" type="search" placeholder="Escribe para buscar o despl&aacute;zate..." autocomplete="off">
+  <div class="catlist" id="catList"></div>
+</div></dialog>
+<dialog id="dlgPend"><div class="dlg">
+  <div class="row between" style="margin-bottom:8px"><h2 style="font-size:22px">Pendientes por enviar</h2><button class="btn ghost" id="pendClose" type="button">Cerrar</button></div>
+  <p class="sub" style="margin-top:0">Se env&iacute;an solos cuando hay se&ntilde;al. No borres la app ni sus datos mientras haya pendientes.</p>
+  <div id="pendList"></div>
+  <div class="actions"><button class="btn" id="pendSend" type="button">Enviar ahora</button></div>
+</div></dialog>
+
+<input type="file" accept="image/*" capture="environment" id="fileFoto" hidden>
+<input type="file" accept="image/*" capture="environment" id="fileScan" hidden>
+
+<script>
+/* =====================================================================
+   CONFIGURACION: pega aqui la liga /exec de tu Apps Script
+   ===================================================================== */
+var API_URL = "https://script.google.com/macros/s/AKfycbyTAboMRxFFRE8pFP2BIg4A1gInXdZMI1F5ezIqu0qYGpxJpzo2zdlcV5hdROuswqV-/exec";
+
+(function(){
+var TIPOS=["GONDOLA","CAMARA FRIA","CABECERA","REFRIGERADOR","CONGELADOR","ANAQUEL","EXHIBIDOR","ISLA","CHECKOUT"];
+var KEYS=["pasillo","mueble","tipo","alto","altoBase","ancho","profundo","niveles","ganchos","altCharola","profGancho","totalTramos"];
+
+/* ---- estado ---- */
+var snap={muebles:[],categorias:[],tiendas:[],tramos:{}};   // ultima copia del servidor
+var cola=[];                                               // operaciones pendientes de enviar
+var E={muebles:[],tramos:{}};                              // estado visible = snap + cola
+var view={name:"lista",audit:null,draft:null};
+var filtro="", tState=null, enLinea=true, enviando=false, listo=false;
+var pin=""; try{pin=localStorage.getItem("lev_pin")||"";}catch(e){}
+
+function $(s){return document.querySelector(s);}
+function $all(s,root){return Array.prototype.slice.call((root||document).querySelectorAll(s));}
+var app=$("#app");
+var ESC={"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"};
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return ESC[c];});}
+function num(v){var n=parseFloat(String(v).replace(",","."));return isNaN(n)?"":n;}
+function copia(o){return JSON.parse(JSON.stringify(o));}
+function pick(a,b){return (a===""||a==null)?(b==null?"":b):a;}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8);}
+function auditId(m){return String(m.tienda||"").toUpperCase()+"_P"+m.pasillo+"_"+m.cara+"_M"+m.mueble;}
+function aviso(t){$("#status").innerHTML=t?'<div class="notice">'+esc(t)+'</div>':"";}
+function toast(t){var d=document.createElement("div");d.className="toast";d.textContent=t;document.body.appendChild(d);setTimeout(function(){d.parentNode&&d.parentNode.removeChild(d);},2800);}
+function opts(list){return list.map(function(v){return '<option value="'+esc(v)+'">';}).join("");}
+function norm(s){s=String(s==null?"":s);if(s.normalize)s=s.normalize("NFD").replace(/[̀-ͯ]/g,"");return s.toUpperCase().trim();}
+
+/* ---- almacenamiento en el celular (IndexedDB) ---- */
+var DBP=null;
+function idb(){
+  if(!DBP) DBP=new Promise(function(res,rej){
+    var r=indexedDB.open("levantamiento",1);
+    r.onupgradeneeded=function(){r.result.createObjectStore("kv");};
+    r.onsuccess=function(){res(r.result);};r.onerror=function(){rej(r.error);};
+  });
+  return DBP;
+}
+function idbGet(k){return idb().then(function(db){return new Promise(function(res,rej){var q=db.transaction("kv").objectStore("kv").get(k);q.onsuccess=function(){res(q.result);};q.onerror=function(){rej(q.error);};});});}
+function idbSet(k,v){return idb().then(function(db){return new Promise(function(res,rej){var tx=db.transaction("kv","readwrite");tx.objectStore("kv").put(v,k);tx.oncomplete=function(){res();};tx.onerror=function(){rej(tx.error);};});});}
+function guardarCola(){return idbSet("cola",cola).catch(function(){toast("No se pudo guardar en el celular. Revisa el espacio libre.");});}
+function guardarSnap(){return idbSet("snap",snap).catch(function(){});}
+
+/* ---- conexion con Apps Script ---- */
+function api(action,payload,opId){
+  var ctrl=window.AbortController?new AbortController():null;
+  var t=setTimeout(function(){if(ctrl)ctrl.abort();},90000);
+  return fetch(API_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
+    body:JSON.stringify({action:action,pin:pin,payload:payload||{},opId:opId||""}),signal:ctrl?ctrl.signal:undefined,redirect:"follow"})
+  .then(function(r){return r.json();},function(e){var x=new Error("SIN_RED");x.red=true;throw x;})
+  .then(function(j){
+    clearTimeout(t);
+    if(!j.ok){var x=new Error(j.error||"Error del servidor");x.server=true;throw x;}
+    return j.data;
+  },function(e){clearTimeout(t);if(!e.red&&!e.server){e=new Error("SIN_RED");e.red=true;}throw e;});
+}
+function setRed(v){enLinea=v;pintarEstado();}
+
+/* ---- aplicar operaciones al estado ---- */
+function buscarIdx(arr,fn){for(var i=0;i<arr.length;i++){if(fn(arr[i]))return i;}return -1;}
+function aplicar(S,op){
+  var d=op.datos, ms=S.muebles, tr=S.tramos;
+  if(op.tipo==="mueble"){
+    var m=copia(d.mueble); m.tienda=String(m.tienda||"").toUpperCase(); m.audit=auditId(m); m.pend=!op.hecho;
+    var ant=d.auditAnterior, i=buscarIdx(ms,function(x){return x.audit===(ant||m.audit);});
+    if(i>=0) ms[i]=m; else ms.push(m);
+    if(ant&&ant!==m.audit){tr[m.audit]=(tr[ant]||[]).map(function(t){t.audit=m.audit;return t;});delete tr[ant];}
+  }else if(op.tipo==="delMueble"){
+    S.muebles=ms.filter(function(x){return x.audit!==d.audit;}); delete tr[d.audit];
+  }else if(op.tipo==="tramo"){
+    var lst=tr[d.audit]||(tr[d.audit]=[]);
+    var j=buscarIdx(lst,function(x){return (d.id&&String(x.id)===String(d.id))||(d.localId&&x.localId===d.localId);});
+    var prev=j>=0?lst[j]:{};
+    var t=copia(d); delete t.foto;
+    t.thumb=d.foto?("data:image/jpeg;base64,"+d.foto):(prev.thumb||"");
+    t.pend=!op.hecho;
+    if(j>=0) lst[j]=t; else lst.push(t);
+  }else if(op.tipo==="delTramo"){
+    if(tr[d.audit]) tr[d.audit]=tr[d.audit].filter(function(x){return !((d.id&&String(x.id)===String(d.id))||(d.localId&&x.localId===d.localId));});
+  }
+}
+function reconstruir(){
+  E=copia({muebles:snap.muebles,tramos:snap.tramos});
+  cola.forEach(function(op){aplicar(E,op);});
+  E.muebles.forEach(function(m){m.n=(E.tramos[m.audit]||[]).length;});
+}
+function encolar(tipo,datos){
+  cola.push({opId:uid(),tipo:tipo,datos:datos,creado:Date.now(),error:""});
+  return guardarCola().then(function(){reconstruir();pintarEstado();render();enviar();});
+}
+
+/* ---- envio de pendientes ---- */
+function enviar(){
+  if(enviando||!cola.length) return Promise.resolve();
+  if(cola[0].error) {pintarEstado();return Promise.resolve();}
+  enviando=true;pintarEstado();
+  var op=cola[0], accion={mueble:"guardarMueble",delMueble:"eliminarMueble",tramo:"guardarTramo",delTramo:"eliminarTramo"}[op.tipo];
+  return api(accion,op.datos,op.opId).then(function(res){
+    setRed(true);
+    if(op.tipo==="tramo"&&res&&res.id!=null&&!op.datos.id){
+      var lid=op.datos.localId; op.datos.id=res.id;
+      cola.forEach(function(o){if(o.datos&&o.datos.localId===lid)o.datos.id=res.id;});
+    }
+    op.hecho=true; aplicar(snap,op);
+    cola.shift(); enviando=false;
+    return Promise.all([guardarCola(),guardarSnap()]).then(function(){
+      reconstruir();render();pintarEstado();
+      if(cola.length) return enviar();
+      return refrescar(true);
+    });
+  }).catch(function(e){
+    enviando=false;
+    if(e.red){setRed(false);return;}
+    if(e.message.indexOf("PIN_INVALIDO")>=0){pedirPin();pintarEstado();return;}
+    op.error=e.message;guardarCola();pintarEstado();
+    toast("Un pendiente no se pudo enviar: "+e.message);
+  });
+}
+function refrescar(silencioso){
+  return api("getTodo").then(function(r){
+    setRed(true);
+    snap={muebles:r.muebles||[],categorias:r.categorias||[],tiendas:r.tiendas||[],tramos:r.tramos||{}};
+    return guardarSnap().then(function(){reconstruir();render();pintarEstado();aviso("");});
+  }).catch(function(e){
+    if(e.red){setRed(false);if(!silencioso&&!snap.muebles.length&&!snap.categorias.length)aviso("Sin señal. La primera vez debes abrir la app con internet para descargar tiendas y categorías.");return;}
+    if(e.message.indexOf("PIN_INVALIDO")>=0){pedirPin();return;}
+    aviso(e.message);
+  });
+}
+
+/* ---- PIN ---- */
+function pedirPin(){var d=$("#dlgPin");if(!d.open)d.showModal();$("#pinIn").focus();}
+$("#pinOk").onclick=function(){pin=$("#pinIn").value.trim();try{localStorage.setItem("lev_pin",pin);}catch(e){}$("#dlgPin").close();cola.forEach(function(o){o.error="";});refrescar().then(enviar);};
+
+/* ---- barra de estado ---- */
+function pintarEstado(){
+  var n=cola.length, err=cola.some(function(o){return o.error;});
+  var t=0;E.muebles.forEach(function(m){t+=m.n||0;});
+  $("#counts").textContent=E.muebles.length+" muebles, "+t+" tramos";
+  $("#net").className="pill "+(enLinea?"on":"off");
+  $("#net").textContent=enLinea?"En línea":"Sin señal";
+  var b=$("#btnPend");
+  b.hidden=!n;
+  b.className="pill "+(err?"err":"warn");
+  b.textContent=enviando?("Enviando... ("+n+")"):(err?"Revisar pendientes ("+n+")":(n+" por enviar"));
+  if($("#dlgPend").open) pintarPendientes();
+}
+function descOp(o){
+  var d=o.datos;
+  if(o.tipo==="mueble") return "Mueble "+auditId(d.mueble);
+  if(o.tipo==="delMueble") return "Eliminar mueble "+d.audit;
+  if(o.tipo==="tramo") return "Tramo "+d.tramo+" de "+d.audit+(d.foto?" (con foto)":"");
+  return "Eliminar tramo "+(d.tramo||"")+" de "+d.audit;
+}
+function pintarPendientes(){
+  $("#pendList").innerHTML=cola.length?cola.map(function(o,i){
+    return '<div class="pend"><div><b>'+esc(descOp(o))+'</b>'+(o.error?'<div class="perr">'+esc(o.error)+'</div>':'')+'</div>'+
+      (o.error?'<button class="btn danger" data-desc="'+i+'" type="button">Descartar</button>':'')+'</div>';
+  }).join(""):'<p class="sub">No hay pendientes.</p>';
+  $all("[data-desc]",$("#pendList")).forEach(function(b){
+    b.onclick=function(){
+      if(!confirm("¿Descartar este pendiente? Lo que capturó se perderá.")) return;
+      cola.splice(Number(b.getAttribute("data-desc")),1);guardarCola().then(function(){reconstruir();render();pintarEstado();enviar();});
+    };
+  });
+}
+$("#btnPend").onclick=function(){pintarPendientes();$("#dlgPend").showModal();};
+$("#pendClose").onclick=function(){$("#dlgPend").close();};
+$("#pendSend").onclick=function(){cola.forEach(function(o){o.error="";});guardarCola();enviar();};
+
+/* ---- consultas al estado ---- */
+function findMueble(a){for(var i=0;i<E.muebles.length;i++){if(E.muebles[i].audit===a)return E.muebles[i];}return null;}
+function tramosDe(a){return (E.tramos[a]||[]).slice().sort(function(x,y){return (Number(x.tramo)||0)-(Number(y.tramo)||0);});}
+function tiendasUsadas(){var o={},r=[];E.muebles.forEach(function(m){if(m.tienda&&!o[m.tienda]){o[m.tienda]=1;r.push(m.tienda);}});return r.sort();}
+function catBuscar(c){for(var i=0;i<snap.categorias.length;i++){if(snap.categorias[i].c===c)return snap.categorias[i];}return null;}
+function divisiones(){var o={},r=[];snap.categorias.forEach(function(c){if(c.d&&!o[c.d]){o[c.d]=1;r.push(c.d);}});return r;}
+function ordenar(a,b){return String(a.tienda).localeCompare(b.tienda)||(a.pasillo-b.pasillo)||String(a.cara).localeCompare(b.cara)||(a.mueble-b.mueble);}
+function tienePendientes(audit){return cola.some(function(o){return o.datos&&(o.datos.audit===audit||(o.tipo==="mueble"&&auditId(o.datos.mueble)===audit));});}
+function enServidor(audit){return snap.muebles.some(function(m){return m.audit===audit;});}
+
+/* ---------- pantallas ---------- */
+function render(){
+  if(!listo) return;
+  var ae=document.activeElement;
+  if(view.name==="mueble"&&ae&&/^m_/.test(ae.id||"")&&ae.tagName==="INPUT") return;
+  $("#fab").style.display=view.name==="lista"?"":"none";
+  if(view.name==="lista") renderLista(); else renderMueble();
+}
+function renderLista(){
+  var ts=tiendasUsadas();
+  if(filtro&&ts.indexOf(filtro)<0) filtro="";
+  var h="";
+  if(ts.length>1){
+    h+='<select class="filter" id="filtro" aria-label="Filtrar por tienda"><option value="">Todas las tiendas</option>'+
+      ts.map(function(t){return '<option'+(t===filtro?' selected':'')+'>'+esc(t)+'</option>';}).join("")+'</select>';
+  }
+  var list=E.muebles.filter(function(m){return !filtro||m.tienda===filtro;}).sort(ordenar);
+  if(!list.length) h+='<div class="empty"><h2>Sin muebles capturados</h2><p>Toca &ldquo;Nuevo mueble&rdquo; para registrar las medidas del primero y despu&eacute;s agregar las fotos de cada tramo.</p></div>';
+  var lastT=null;
+  list.forEach(function(m){
+    if(m.tienda!==lastT){h+='<h3 class="store-h">'+esc(m.tienda)+'</h3>';lastT=m.tienda;}
+    var n=m.n||0,tot=m.totalTramos||0, p=tienePendientes(m.audit);
+    h+='<button class="card" data-open="'+esc(m.audit)+'" type="button">'+
+      '<span class="label-tag">P'+esc(m.pasillo)+' '+esc(m.cara)+' M'+esc(m.mueble)+'</span>'+
+      '<span class="meta"><b>'+esc(m.tipo||"Sin tipo")+(p?' <span class="mini">pendiente</span>':'')+'</b><span>'+esc(m.alto)+' x '+esc(m.ancho)+' x '+esc(m.profundo)+' cm, '+esc(m.niveles||0)+' charola, '+esc(m.ganchos||0)+' ganchos</span></span>'+
+      '<span class="prog'+(tot&&n>=tot?' done':'')+'">'+n+'/'+(tot||"?")+'</span></button>';
+  });
+  app.innerHTML=h;
+  var f=$("#filtro"); if(f) f.onchange=function(e){filtro=e.target.value;render();};
+  $all("[data-open]",app).forEach(function(b){
+    b.onclick=function(){view={name:"mueble",audit:b.getAttribute("data-open"),draft:null};window.scrollTo(0,0);render();};
+  });
+}
+function nuevoDraft(){
+  var last=E.muebles[E.muebles.length-1];
+  if(last) return {tienda:last.tienda,pasillo:last.pasillo,cara:last.cara,mueble:(Number(last.mueble)||0)+1,tipo:last.tipo,totalTramos:last.totalTramos,niveles:last.niveles,ganchos:last.ganchos,altCharola:pick(last.altCharola,3),profGancho:last.profGancho,altoBase:last.altoBase,alto:last.alto,ancho:last.ancho,profundo:last.profundo};
+  return {tienda:"",pasillo:1,cara:"A",mueble:1,tipo:"GONDOLA",totalTramos:"",niveles:"",ganchos:0,altCharola:3,profGancho:"",altoBase:"",alto:"",ancho:"",profundo:""};
+}
+function elevSVG(m){
+  var alto=num(m.alto)||200, ancho=num(m.ancho)||120, base=Math.min(num(m.altoBase)||0,alto), niv=Math.max(0,Math.min(20,parseInt(m.niveles,10)||0));
+  var H=170, s=H/alto, W=Math.max(40,ancho*s), pad=40, top=pad/4, bot=top+H, lines="";
+  for(var i=1;i<niv;i++){var y=top+H-(base+(alto-base)*i/niv)*s;lines+='<line x1="'+pad+'" x2="'+(pad+W)+'" y1="'+y+'" y2="'+y+'" stroke="currentColor" stroke-opacity=".55"/>';}
+  return '<svg viewBox="0 0 '+(W+pad*2)+' '+(H+pad)+'" role="img" aria-label="Vista frontal del mueble" style="color:var(--steel)">'+
+    '<rect x="'+pad+'" y="'+top+'" width="'+W+'" height="'+H+'" fill="none" stroke="currentColor" stroke-width="2"/>'+
+    '<rect x="'+pad+'" y="'+(bot-base*s)+'" width="'+W+'" height="'+(base*s)+'" fill="var(--tag)" opacity=".8"/>'+lines+
+    '<text x="'+(pad-6)+'" y="'+(top+H/2)+'" text-anchor="end" font-size="12" fill="var(--muted)">'+esc(m.alto||"?")+'</text>'+
+    '<text x="'+(pad+W/2)+'" y="'+(bot+16)+'" text-anchor="middle" font-size="12" fill="var(--muted)">'+esc(m.ancho||"?")+' cm</text>'+
+    '<text x="'+(pad+W+6)+'" y="'+(bot-2)+'" font-size="11" fill="var(--muted)">base '+esc(m.altoBase||0)+'</text></svg>';
+}
+function campo(id,label,val,modo){return '<label class="f">'+label+'<input id="'+id+'" inputmode="'+modo+'" value="'+esc(val)+'"></label>';}
+function pickHtml(id,cat,nomen){
+  return '<button type="button" class="pickbtn" id="'+id+'">'+(cat?'<span>'+esc(cat)+'</span><small>'+esc(nomen||"")+'</small>':'<span class="ph">Toca para elegir...</span>')+'</button>';
+}
+
+function renderMueble(){
+  var existing=view.audit?findMueble(view.audit):null;
+  if(view.audit&&!existing){view={name:"lista",audit:null,draft:null};return render();}
+  if(!view.draft) view.draft=existing?copia(existing):nuevoDraft();
+  var m=view.draft, tramosAct=existing?tramosDe(existing.audit):[];
+  var caras=["A","B","C","D"].map(function(c){return '<button type="button" aria-pressed="'+(m.cara===c)+'" data-c="'+c+'">'+c+'</button>';}).join("");
+  var h='<button class="back" id="back" type="button">&lsaquo; Todos los muebles</button>'+
+    '<div class="panel"><div class="row between" style="margin-bottom:10px"><h2 style="font-size:24px">'+(existing?'Mueble':'Nuevo mueble')+'</h2><span class="label-tag" id="aid">'+esc(auditId(m))+'</span></div>'+
+    '<div class="grid">'+
+    '<div class="full"><div class="sub" style="margin-bottom:4px">Tienda</div>'+pickHtml("m_tiendaBtn",m.tienda,"")+'</div>'+
+    campo("m_pasillo","Pasillo",m.pasillo,"numeric")+campo("m_mueble","Mueble",m.mueble,"numeric")+
+    '<div class="full"><div class="sub" style="margin-bottom:4px">Cara</div><div class="seg" id="m_cara">'+caras+'</div></div>'+
+    '<label class="f full">Tipo de mueble<input id="m_tipo" list="dl_tipos" value="'+esc(m.tipo)+'" autocomplete="off"></label>'+
+    '<datalist id="dl_tipos">'+opts(TIPOS)+'</datalist>'+
+    '</div></div>'+
+    '<div class="panel"><h3 style="font-size:20px;margin-bottom:4px">Medidas y niveles generales</h3><p class="sub" style="margin:0 0 10px">Se copian a todos los tramos. En cada tramo puedes cambiarlos si es distinto.</p><div class="grid">'+
+    campo("m_alto","Alto mueble (cm)",m.alto,"decimal")+campo("m_altoBase","Alto base (cm)",m.altoBase,"decimal")+
+    campo("m_ancho","Ancho (cm)",m.ancho,"decimal")+campo("m_profundo","Profundo (cm)",m.profundo,"decimal")+
+    campo("m_niveles","Niveles de charola",m.niveles,"numeric")+campo("m_altCharola","Altura de charola (cm)",pick(m.altCharola,3),"decimal")+
+    campo("m_ganchos","Niveles de ganchos",pick(m.ganchos,0),"numeric")+campo("m_profGancho","Profundidad de gancho (cm)",m.profGancho,"decimal")+
+    campo("m_totalTramos","Total tramos",m.totalTramos,"numeric")+
+    '</div><div class="elev" id="elev">'+elevSVG(m)+'</div><div class="actions">'+
+    '<button class="btn" id="saveM" type="button">'+(existing?'Guardar cambios':'Guardar mueble')+'</button>'+
+    (existing?'<button class="btn danger" id="delM" type="button">Eliminar</button>':'')+
+    '</div></div>';
+  if(existing){
+    h+='<div class="panel"><div class="row between" style="margin-bottom:10px"><h3 style="font-size:20px">Tramos '+tramosAct.length+'/'+(existing.totalTramos||'?')+'</h3>'+
+      '<button class="btn tag" id="addT" type="button">Agregar tramo</button></div>';
+    if(!tramosAct.length) h+='<p class="sub">Agrega un tramo por cada foto: toma la foto, escanea o escribe el UPC y elige la categor&iacute;a.</p>';
+    h+='<div class="thumbs">'+tramosAct.map(function(t){
+      return '<button class="tr" data-t="'+esc(t.id!=null&&t.id!==""?t.id:t.localId)+'" type="button">'+
+        (t.thumb?'<img src="'+esc(t.thumb)+'" alt="Tramo '+esc(t.tramo)+'" loading="lazy" referrerpolicy="no-referrer">':'<span class="noimg">Sin foto</span>')+
+        '<div class="t"><b>Tramo '+esc(t.tramo)+'</b>'+(t.pend?' <span class="mini">pendiente</span>':'')+'<br>'+esc(t.categoria||"Sin categoría")+'<br><span class="sub">'+esc(t.nomen||"")+(t.nomen&&t.upc?" / ":"")+esc(t.upc||"")+'</span><br><span class="sub">Charola '+esc(pick(t.charola,existing.niveles))+' / Ganchos '+esc(pick(t.ganchos,pick(existing.ganchos,0)))+'</span></div></button>';
+    }).join("")+'</div></div>';
+  }
+  app.innerHTML=h;
+
+  function read(){KEYS.forEach(function(k){m[k]=$("#m_"+k).value.trim();});m.tipo=m.tipo.toUpperCase();}
+  $("#m_tiendaBtn").onclick=function(){
+    read();
+    abrirLista("Elegir tienda",snap.tiendas.map(function(x){return {c:x,n:""};}),m.tienda,
+      "No hay tiendas descargadas. Abre la app con señal o revisa la pestaña TIENDAS.",
+      function(c){m.tienda=c.c;render();});
+  };
+  $all("input[id^=m_]",app).forEach(function(i){i.addEventListener("input",function(){read();$("#aid").textContent=auditId(m);$("#elev").innerHTML=elevSVG(m);});});
+  $all("#m_cara button",app).forEach(function(b){
+    b.onclick=function(){m.cara=b.getAttribute("data-c");$all("#m_cara button",app).forEach(function(x){x.setAttribute("aria-pressed",x===b?"true":"false");});$("#aid").textContent=auditId(m);};
+  });
+  $("#back").onclick=function(){view={name:"lista",audit:null,draft:null};render();};
+  $("#saveM").onclick=function(){
+    read();
+    if(!m.tienda) return toast("Elige la tienda.");
+    if(!m.pasillo||!m.mueble) return toast("Faltan pasillo o número de mueble.");
+    var nuevo=auditId(m), ant=existing?existing.audit:null;
+    if(nuevo!==ant&&findMueble(nuevo)) return toast("Ya existe "+nuevo+".");
+    if(ant&&nuevo!==ant&&tienePendientes(ant)) return toast("Este mueble tiene pendientes por enviar. Espera a que se envíen antes de cambiar tienda, pasillo, cara o número.");
+    var datos={mueble:copia(m),auditAnterior:ant};
+    delete datos.mueble.audit;delete datos.mueble.n;delete datos.mueble.pend;
+    view={name:"mueble",audit:nuevo,draft:null};
+    encolar("mueble",datos).then(function(){toast(existing?"Cambios guardados.":"Mueble guardado. Ahora agrega sus tramos.");});
+  };
+  var del=$("#delM");
+  if(del) del.onclick=function(){
+    var a=existing.audit;
+    if(!confirm("¿Eliminar "+a+" y sus "+tramosAct.length+" tramos?")) return;
+    var soloLocal=!enServidor(a);
+    cola=cola.filter(function(o){return !(o.datos&&(o.datos.audit===a||(o.tipo==="mueble"&&auditId(o.datos.mueble)===a)));});
+    view={name:"lista",audit:null,draft:null};
+    if(soloLocal) guardarCola().then(function(){reconstruir();render();pintarEstado();toast("Mueble eliminado.");});
+    else encolar("delMueble",{audit:a}).then(function(){toast("Mueble eliminado.");});
+  };
+  var add=$("#addT"); if(add) add.onclick=function(){abrirTramo(existing,null);};
+  $all("[data-t]",app).forEach(function(b){
+    b.onclick=function(){var k=b.getAttribute("data-t");var t=null;tramosAct.forEach(function(x){if(String(x.id)===k||x.localId===k)t=x;});abrirTramo(existing,t);};
+  });
+}
+
+/* ---------- tramo ---------- */
+function abrirTramo(m,t){
+  var lst=tramosDe(m.audit), last=lst[lst.length-1]||{}, d;
+  if(t){
+    d=copia(t);
+    d.altoBase=pick(d.altoBase,m.altoBase);d.alto=pick(d.alto,m.alto);d.ancho=pick(d.ancho,m.ancho);d.profundo=pick(d.profundo,m.profundo);
+    d.charola=pick(d.charola,m.niveles);d.ganchos=pick(d.ganchos,pick(m.ganchos,0));
+    d.altCharola=pick(d.altCharola,pick(m.altCharola,3));d.profGancho=pick(d.profGancho,m.profGancho);
+  }else{
+    d={tramo:(Number(last.tramo)||0)+1,secuencia:pick(last.secuencia,1),upc:"",
+      categoria:last.categoria||"",nomen:last.nomen||"",division:last.division||"",partido:false,catPartido:"",
+      altoBase:pick(last.altoBase,m.altoBase),alto:pick(last.alto,m.alto),ancho:pick(last.ancho,m.ancho),profundo:pick(last.profundo,m.profundo),
+      charola:pick(m.niveles,""),ganchos:pick(m.ganchos,0),altCharola:pick(m.altCharola,3),profGancho:pick(m.profGancho,"")};
+  }
+  tState={m:m,t:t,foto64:null,photoURL:t&&t.thumb?t.thumb:null,d:d};
+  drawTramo();$("#dlgTramo").showModal();
+}
+function drawTramo(){
+  var m=tState.m,t=tState.t,d=tState.d;
+  var cp=d.catPartido?catBuscar(d.catPartido):null;
+  $("#dlgTramoBody").innerHTML=
+    '<div class="row between" style="margin-bottom:10px"><h2 style="font-size:24px">'+(t?'Tramo '+esc(d.tramo):'Nuevo tramo')+'</h2><span class="label-tag">'+esc(m.audit)+'</span></div>'+
+    '<button class="photo-drop" id="pick" type="button">'+
+      (tState.photoURL?'<img src="'+esc(tState.photoURL)+'" alt="Foto del tramo" referrerpolicy="no-referrer">':'<b>Tomar foto</b><span class="sub">Toca para abrir la c&aacute;mara</span>')+
+    '</button>'+
+    '<div class="grid" style="margin-top:12px">'+
+      '<label class="f full">UPC<span class="inline"><input id="t_upc" inputmode="numeric" value="'+esc(d.upc)+'" placeholder="7501166515665"><button class="btn ghost" id="scan" type="button">Escanear</button></span></label>'+
+      '<div class="full"><div class="sub" style="margin-bottom:4px">Categor&iacute;a</div>'+pickHtml("t_catBtn",d.categoria,d.nomen)+'</div>'+
+      '<label class="f full">Divisi&oacute;n<input id="t_div" list="dl_divs" value="'+esc(d.division)+'" autocomplete="off"></label>'+
+      '<datalist id="dl_divs">'+opts(divisiones())+'</datalist>'+
+      '<label class="f">Tramo<input id="t_tramo" inputmode="numeric" value="'+esc(d.tramo)+'"></label>'+
+      '<label class="f">Secuencia<input id="t_sec" inputmode="numeric" value="'+esc(d.secuencia)+'"></label>'+
+    '</div>'+
+    '<div class="sec">Medidas de este tramo (cm)</div>'+
+    '<div class="grid">'+
+      campo("t_alto","Alto mueble",d.alto,"decimal")+campo("t_altoBase","Alto base",d.altoBase,"decimal")+
+      campo("t_ancho","Ancho",d.ancho,"decimal")+campo("t_profundo","Profundo",d.profundo,"decimal")+
+    '</div>'+
+    '<div class="sec">Niveles, charolas y ganchos de este tramo <span style="text-transform:none;font-weight:400">(del mueble: '+esc(pick(m.niveles,0))+' charola, '+esc(pick(m.ganchos,0))+' ganchos)</span></div>'+
+    '<div class="grid">'+
+      campo("t_charola","Niveles de charola",d.charola,"numeric")+campo("t_altCharola","Altura de charola (cm)",d.altCharola,"decimal")+
+      campo("t_ganchos","Niveles de ganchos",d.ganchos,"numeric")+campo("t_profGancho","Profundidad de gancho (cm)",d.profGancho,"decimal")+
+    '</div>'+
+    '<div class="grid" style="margin-top:8px">'+
+      '<label class="check full"><input type="checkbox" id="t_part"'+(d.partido?' checked':'')+'> Tramo partido (dos categor&iacute;as)</label>'+
+      '<div class="full" id="wrapCP"'+(d.partido?'':' hidden')+'><div class="sub" style="margin-bottom:4px">Categor&iacute;a partida</div>'+pickHtml("t_cpBtn",d.catPartido,cp?cp.n:"")+'</div>'+
+    '</div>'+
+    '<div class="actions"><button class="btn" id="saveT" type="button">Guardar tramo</button><button class="btn ghost" id="cancelT" type="button">Cancelar</button></div>'+
+    (t?'<div class="actions"><button class="btn danger" id="delT" type="button">Eliminar tramo</button></div>':'');
+  function rd(){
+    d.upc=$("#t_upc").value.replace(/\D/g,"");d.division=$("#t_div").value.trim();
+    d.tramo=$("#t_tramo").value.trim();d.secuencia=$("#t_sec").value.trim();d.partido=$("#t_part").checked;
+    d.alto=$("#t_alto").value.trim();d.altoBase=$("#t_altoBase").value.trim();d.ancho=$("#t_ancho").value.trim();d.profundo=$("#t_profundo").value.trim();
+    d.charola=$("#t_charola").value.trim();d.ganchos=$("#t_ganchos").value.trim();
+    d.altCharola=$("#t_altCharola").value.trim();d.profGancho=$("#t_profGancho").value.trim();
+  }
+  tState.rd=rd;
+  $("#t_catBtn").onclick=function(){rd();abrirCat(d.categoria,function(c){d.categoria=c.c;d.nomen=c.n;if(c.d)d.division=c.d;drawTramo();});};
+  $("#t_cpBtn").onclick=function(){rd();abrirCat(d.catPartido,function(c){d.catPartido=c.c;drawTramo();});};
+  $("#t_part").onchange=function(e){$("#wrapCP").hidden=!e.target.checked;};
+  $("#pick").onclick=function(){rd();var f=$("#fileFoto");f.value="";f.click();};
+  $("#scan").onclick=function(){rd();var f=$("#fileScan");f.value="";f.click();};
+  $("#cancelT").onclick=function(){$("#dlgTramo").close();};
+  $("#saveT").onclick=function(){rd();guardarTramo();};
+  var dt=$("#delT");
+  if(dt) dt.onclick=function(){
+    if(!confirm("¿Eliminar este tramo?")) return;
+    var hasId=t.id!=null&&t.id!=="";
+    cola=cola.filter(function(o){return !(o.tipo==="tramo"&&((hasId&&String(o.datos.id)===String(t.id))||(t.localId&&o.datos.localId===t.localId)));});
+    $("#dlgTramo").close();
+    if(!hasId) guardarCola().then(function(){reconstruir();render();pintarEstado();toast("Tramo eliminado.");});
+    else encolar("delTramo",{audit:m.audit,id:t.id,tramo:t.tramo}).then(function(){toast("Tramo eliminado.");});
+  };
+}
+function guardarTramo(){
+  var m=tState.m,t=tState.t,d=tState.d;
+  if(!t&&!tState.foto64) return toast("Toma la foto del tramo.");
+  if(!d.categoria) return toast("Elige la categoría.");
+  if(d.partido&&!d.catPartido) return toast("Elige la categoría partida.");
+  var hasId=t&&t.id!=null&&t.id!=="";
+  var datos={audit:m.audit,id:hasId?t.id:null,localId:t?(t.localId||null):uid(),
+    tramo:d.tramo,secuencia:d.secuencia,upc:d.upc,categoria:d.categoria,nomen:d.nomen,division:d.division,
+    partido:d.partido,catPartido:d.catPartido,altoBase:d.altoBase,alto:d.alto,ancho:d.ancho,profundo:d.profundo,
+    charola:d.charola,ganchos:d.ganchos,altCharola:d.altCharola,profGancho:d.profGancho,foto:tState.foto64||null};
+  if(!datos.localId) datos.localId=uid();
+  /* si ya hay un pendiente de este mismo tramo, se reemplaza (conservando la foto si no se tomo otra) */
+  var i=buscarIdx(cola,function(o){return o.tipo==="tramo"&&!o.error&&((hasId&&String(o.datos.id)===String(datos.id))||(datos.localId&&o.datos.localId===datos.localId));});
+  if(i>0||(i===0&&!enviando)){
+    if(!datos.foto) datos.foto=cola[i].datos.foto||null;
+    cola[i].datos=datos;
+    $("#dlgTramo").close();
+    guardarCola().then(function(){reconstruir();render();pintarEstado();enviar();toast("Tramo guardado.");});
+    return;
+  }
+  $("#dlgTramo").close();
+  encolar("tramo",datos).then(function(){toast(enLinea?"Tramo guardado.":"Tramo guardado en el celular. Se enviará al haber señal.");});
+}
+
+/* ---------- selector de listas (tiendas y categorias) ---------- */
+var pk={cb:null,actual:"",items:[],vacio:""};
+function abrirLista(titulo,items,actual,vacio,cb){
+  pk={cb:cb,actual:actual||"",items:items||[],vacio:vacio};
+  $("#pkTitle").innerHTML=titulo;$("#catQ").value="";pintarLista();$("#dlgCat").showModal();
+  var on=$("#catList .catopt.on"); if(on&&on.scrollIntoView) on.scrollIntoView({block:"center"});
+}
+function abrirCat(actual,cb){abrirLista("Elegir categor&iacute;a",snap.categorias,actual,"No hay categorías descargadas. Abre la app con señal.",cb);}
+function pintarLista(){
+  var q=norm($("#catQ").value), act=norm(pk.actual), html="";
+  pk.items.forEach(function(c,i){
+    if(q&&norm(c.c).indexOf(q)<0&&norm(c.n).indexOf(q)<0) return;
+    html+='<button type="button" class="catopt'+(norm(c.c)===act?' on':'')+'" data-i="'+i+'"><span>'+esc(c.c)+'</span><small>'+esc(c.n)+'</small></button>';
+  });
+  if(!pk.items.length) html='<div class="empty" style="padding:16px">'+esc(pk.vacio)+'</div>';
+  else if(!html) html='<div class="empty" style="padding:16px">No se encontr&oacute; con ese nombre.</div>';
+  $("#catList").innerHTML=html;
+  $all(".catopt",$("#catList")).forEach(function(b){
+    b.onclick=function(){var c=pk.items[Number(b.getAttribute("data-i"))];$("#dlgCat").close();if(pk.cb)pk.cb(c);};
+  });
+}
+$("#catQ").addEventListener("input",pintarLista);
+$("#catClose").onclick=function(){$("#dlgCat").close();};
+
+/* ---------- foto y codigo de barras ---------- */
+$("#fileFoto").onchange=function(e){
+  var f=e.target.files[0]; if(!f) return;
+  var blobRef=null;
+  reducir(f,1600,0.8).then(function(blob){
+    blobRef=blob;tState.photoURL=URL.createObjectURL(blob);return aBase64(blob);
+  }).then(function(b64){
+    tState.foto64=b64;if(tState.rd)tState.rd();drawTramo();
+    if(!tState.d.upc) return leerCodigo(blobRef).then(function(code){if(code){tState.d.upc=code;$("#t_upc").value=code;toast("UPC detectado en la foto.");}});
+  }).catch(function(){toast("No se pudo leer la foto.");});
+};
+$("#fileScan").onchange=function(e){
+  var f=e.target.files[0]; if(!f) return;
+  toast("Buscando código...");
+  leerCodigo(f).then(function(code){
+    if(code){tState.d.upc=code;$("#t_upc").value=code;toast("UPC: "+code);}
+    else toast("No se encontró el código. Acerca la cámara al código de barras o escríbelo.");
+  });
+};
+function aBase64(blob){return new Promise(function(res,rej){var r=new FileReader();r.onload=function(){res(String(r.result).split(",")[1]);};r.onerror=rej;r.readAsDataURL(blob);});}
+function reducir(file,max,q){
+  return new Promise(function(res,rej){
+    var img=new Image(),u=URL.createObjectURL(file);
+    img.onload=function(){
+      var w=img.naturalWidth,h=img.naturalHeight,s=Math.min(1,max/Math.max(w,h));
+      var c=document.createElement("canvas");c.width=Math.round(w*s);c.height=Math.round(h*s);
+      c.getContext("2d").drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(u);
+      c.toBlob(function(b){if(b)res(b);else rej(new Error("blob"));},"image/jpeg",q);
+    };
+    img.onerror=rej;img.src=u;
+  });
+}
+var zxingP=null;
+function cargarZXing(){
+  if(window.ZXing) return Promise.resolve();
+  if(!zxingP) zxingP=new Promise(function(res,rej){var s=document.createElement("script");s.src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js";s.onload=res;s.onerror=function(){zxingP=null;rej();};document.head.appendChild(s);});
+  return zxingP;
+}
+function leerCodigo(blob){
+  var p=Promise.resolve("");
+  if("BarcodeDetector" in window){
+    p=createImageBitmap(blob).then(function(bmp){
+      return new window.BarcodeDetector({formats:["ean_13","ean_8","upc_a","upc_e","code_128"]}).detect(bmp);
+    }).then(function(r){return r&&r[0]?String(r[0].rawValue).replace(/\D/g,""):"";}).catch(function(){return "";});
+  }
+  return p.then(function(code){
+    if(code) return code;
+    return cargarZXing().then(function(){
+      var u=URL.createObjectURL(blob);
+      return new window.ZXing.BrowserMultiFormatReader().decodeFromImageUrl(u).then(function(r){URL.revokeObjectURL(u);return r?String(r.getText()).replace(/\D/g,""):"";});
+    }).catch(function(){return "";});
+  });
+}
+
+/* ---------- arranque ---------- */
+$("#fab").onclick=function(){view={name:"mueble",audit:null,draft:null};render();window.scrollTo(0,0);};
+$("#btnRefresh").onclick=function(){cola.forEach(function(o){o.error="";});refrescar().then(enviar);};
+window.addEventListener("online",function(){enviar();refrescar(true);});
+window.addEventListener("offline",function(){setRed(false);});
+document.addEventListener("visibilitychange",function(){if(!document.hidden){enviar();}});
+setInterval(function(){if(cola.length)enviar();},20000);
+
+if(navigator.storage&&navigator.storage.persist){navigator.storage.persist().catch(function(){});}
+if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(function(){});}
+
+Promise.all([idbGet("snap"),idbGet("cola")]).catch(function(){return [null,null];}).then(function(r){
+  if(r[0]) snap=r[0];
+  snap.categorias=snap.categorias||[];snap.tiendas=snap.tiendas||[];snap.tramos=snap.tramos||{};snap.muebles=snap.muebles||[];
+  if(r[1]) cola=r[1];
+  listo=true;reconstruir();render();pintarEstado();
+  return refrescar(cola.length>0);
+}).then(function(){
+  enviar();
+  setTimeout(function(){if(navigator.onLine)cargarZXing().catch(function(){});},4000);
+});
+})();
+</script>
+
+</body>
+</html>
