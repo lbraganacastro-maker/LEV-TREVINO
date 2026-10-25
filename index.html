@@ -112,7 +112,7 @@ window.addEventListener("error",function(e){
       <div>
         <h1>Levantamiento de mobiliario</h1>
         <div class="sub" id="counts">Cargando&hellip;</div>
-        <div class="statusbar"><span class="pill on" id="net">En l&iacute;nea</span><button class="pill warn" id="btnPend" type="button" hidden></button></div>
+        <div class="statusbar"><span class="pill on" id="net">En l&iacute;nea</span><button class="pill warn" id="btnPend" type="button" style="display:none"></button></div>
       </div>
       <button class="btn ghost" id="btnRefresh" type="button">Actualizar</button>
     </div>
@@ -147,7 +147,7 @@ window.addEventListener("error",function(e){
 /* =====================================================================
    CONFIGURACION: pega aqui la liga /exec de tu Apps Script
    ===================================================================== */
-var API_URL = "https://script.google.com/macros/s/AKfycbzxrI3fqbW3yiRhAhLMO546T1q5dT5kKqHx5P0wU6T2k5fuyc8zEb1SpgDGSXC2Ppzn/exec";
+var API_URL = "https://script.google.com/macros/s/AKfycbyTAboMRxFFRE8pFP2BIg4A1gInXdZMI1F5ezIqu0qYGpxJpzo2zdlcV5hdROuswqV-/exec";
 
 (function(){
 var TIPOS=["GONDOLA","CAMARA FRIA","CABECERA","REFRIGERADOR","CONGELADOR","ANAQUEL","EXHIBIDOR","ISLA","CHECKOUT"];
@@ -272,7 +272,7 @@ function refrescar(silencioso){
     snap={muebles:r.muebles||[],categorias:r.categorias||[],tiendas:r.tiendas||[],tramos:r.tramos||{}};
     return guardarSnap().then(function(){reconstruir();render();pintarEstado();aviso("");});
   }).catch(function(e){
-    if(e.red){setRed(false);if(!silencioso&&!snap.muebles.length&&!snap.categorias.length)aviso("Sin señal. La primera vez debes abrir la app con internet para descargar tiendas y categorías.");return;}
+    if(e.red){setRed(false);if(!silencioso&&!snap.muebles.length&&!snap.categorias.length)aviso(navigator.onLine?"Hay internet pero el Google Sheet no responde. Revisa que Código.gs tenga la función doPost y que hayas publicado una Nueva versión con acceso para Cualquier persona.":"Sin señal. La primera vez debes abrir la app con internet para descargar tiendas y categorías.");return;}
     if(e.message.indexOf("PIN_INVALIDO")>=0){pedirPin();return;}
     aviso(e.message);
   });
@@ -288,9 +288,9 @@ function pintarEstado(){
   var t=0;E.muebles.forEach(function(m){t+=m.n||0;});
   $("#counts").textContent=E.muebles.length+" muebles, "+t+" tramos";
   $("#net").className="pill "+(enLinea?"on":"off");
-  $("#net").textContent=enLinea?"En línea":"Sin señal";
+  $("#net").textContent=enLinea?"En línea":(navigator.onLine?"Sin conexión al Sheet":"Sin señal");
   var b=$("#btnPend");
-  b.hidden=!n;
+  b.style.display=n?"":"none";
   b.className="pill "+(err?"err":"warn");
   b.textContent=enviando?("Enviando... ("+n+")"):(err?"Revisar pendientes ("+n+")":(n+" por enviar"));
   if($("#dlgPend").open) pintarPendientes();
@@ -361,9 +361,24 @@ function renderLista(){
     b.onclick=function(){view={name:"mueble",audit:b.getAttribute("data-open"),draft:null};window.scrollTo(0,0);render();};
   });
 }
+/* Nuevo mueble: toma las medidas que MAS se repiten en el pasillo (la captura principal), no la ultima */
+var MEDIDAS=["tipo","totalTramos","niveles","ganchos","altCharola","profGancho","altoBase","alto","ancho","profundo"];
+function masRepetido(lista){
+  var cuenta={},mejor=null,max=0;
+  lista.forEach(function(m,i){
+    var k=MEDIDAS.map(function(c){return String(m[c]==null?"":m[c]);}).join("|");
+    cuenta[k]=(cuenta[k]||0)+1;
+    if(cuenta[k]>=max){max=cuenta[k];mejor=m;}   /* empate: gana el mas reciente */
+  });
+  return mejor;
+}
 function nuevoDraft(){
   var last=E.muebles[E.muebles.length-1];
-  if(last) return {tienda:last.tienda,pasillo:last.pasillo,cara:last.cara,mueble:(Number(last.mueble)||0)+1,tipo:last.tipo,totalTramos:last.totalTramos,niveles:last.niveles,ganchos:last.ganchos,altCharola:pick(last.altCharola,3),profGancho:last.profGancho,altoBase:last.altoBase,alto:last.alto,ancho:last.ancho,profundo:last.profundo};
+  if(last){
+    var mismos=E.muebles.filter(function(m){return m.tienda===last.tienda&&String(m.pasillo)===String(last.pasillo);});
+    var ref=masRepetido(mismos)||last;
+    return {tienda:last.tienda,pasillo:last.pasillo,cara:last.cara,mueble:(Number(last.mueble)||0)+1,tipo:ref.tipo,totalTramos:ref.totalTramos,niveles:ref.niveles,ganchos:ref.ganchos,altCharola:pick(ref.altCharola,3),profGancho:ref.profGancho,altoBase:ref.altoBase,alto:ref.alto,ancho:ref.ancho,profundo:ref.profundo};
+  }
   return {tienda:"",pasillo:1,cara:"A",mueble:1,tipo:"GONDOLA",totalTramos:"",niveles:"",ganchos:0,altCharola:3,profGancho:"",altoBase:"",alto:"",ancho:"",profundo:""};
 }
 function elevSVG(m){
@@ -470,7 +485,8 @@ function abrirTramo(m,t){
   }else{
     d={tramo:(Number(last.tramo)||0)+1,secuencia:pick(last.secuencia,1),upc:"",
       categoria:last.categoria||"",nomen:last.nomen||"",division:last.division||"",partido:false,catPartido:"",
-      altoBase:pick(last.altoBase,m.altoBase),alto:pick(last.alto,m.alto),ancho:pick(last.ancho,m.ancho),profundo:pick(last.profundo,m.profundo),
+      /* medidas: siempre las generales del mueble (captura principal), no las del ultimo tramo editado */
+      altoBase:pick(m.altoBase,""),alto:pick(m.alto,""),ancho:pick(m.ancho,""),profundo:pick(m.profundo,""),
       charola:pick(m.niveles,""),ganchos:pick(m.ganchos,0),altCharola:pick(m.altCharola,3),profGancho:pick(m.profGancho,"")};
   }
   tState={m:m,t:t,foto64:null,photoURL:t&&t.thumb?t.thumb:null,d:d};
