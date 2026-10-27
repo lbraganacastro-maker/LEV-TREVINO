@@ -94,6 +94,9 @@ dialog::backdrop{background:rgba(10,15,20,.55)}
 .pill.on{background:#DDF1E6;color:#1F7A4D}.pill.off{background:#F6E0DE;color:#B3261E}
 .pill.warn{background:var(--tag);color:var(--tag-ink);cursor:pointer}.pill.err{background:#B3261E;color:#fff;cursor:pointer}
 .statusbar{display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap}
+details.niv{margin-top:10px;border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:var(--panel)}
+details.niv summary{cursor:pointer;font-weight:600;font-size:15px;padding:4px 0}
+details.niv .grid{grid-template-columns:repeat(2,minmax(0,1fr))}details.niv label.f{min-width:0}details.niv *{box-sizing:border-box}details.niv label.f.dif input{border-color:var(--tag);border-width:2px}
 .mini{font-size:11px;font-weight:600;background:var(--tag);color:var(--tag-ink);border-radius:4px;padding:1px 5px;vertical-align:middle}
 .pend{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
 .perr{color:var(--danger);font-size:14px}
@@ -429,7 +432,7 @@ function renderMueble(){
     h+='<div class="thumbs">'+tramosAct.map(function(t){
       return '<button class="tr" data-t="'+esc(t.id!=null&&t.id!==""?t.id:t.localId)+'" type="button">'+
         (t.thumb?'<img src="'+esc(t.thumb)+'" alt="Tramo '+esc(t.tramo)+'" loading="lazy" referrerpolicy="no-referrer">':'<span class="noimg">Sin foto</span>')+
-        '<div class="t"><b>Tramo '+esc(t.tramo)+'</b>'+(t.pend?' <span class="mini">pendiente</span>':'')+'<br>'+esc(t.categoria||"Sin categoría")+'<br><span class="sub">'+esc(t.nomen||"")+(t.nomen&&t.upc?" / ":"")+esc(t.upc||"")+'</span><br><span class="sub">Charola '+esc(pick(t.charola,existing.niveles))+' / Ganchos '+esc(pick(t.ganchos,pick(existing.ganchos,0)))+'</span></div></button>';
+        '<div class="t"><b>Tramo '+esc(t.tramo)+'</b>'+(t.pend?' <span class="mini">pendiente</span>':'')+'<br>'+esc(t.categoria||"Sin categoría")+'<br><span class="sub">'+esc(t.nomen||"")+(t.nomen&&t.upc?" / ":"")+esc(t.upc||"")+'</span><br><span class="sub">Charola '+esc(pick(t.charola,existing.niveles))+' / Ganchos '+esc(pick(t.ganchos,pick(existing.ganchos,0)))+'</span>'+(t.profNiveles?' <span class="mini">prof. por nivel</span>':'')+'</div></button>';
     }).join("")+'</div></div>';
   }
   app.innerHTML=h;
@@ -474,6 +477,18 @@ function renderMueble(){
   });
 }
 
+/* ---------- profundidad por nivel ("CH1=35;GA2=20") ---------- */
+function parseProf(v){var o={};String(v||"").toUpperCase().split(/[;,]/).forEach(function(p){var m=p.trim().match(/^(CH|GA)\s*(\d+)\s*[=:]\s*([\d.]+)$/);if(m&&parseFloat(m[3])>0)o[m[1]+Number(m[2])]=String(parseFloat(m[3]));});return o;}
+function joinProf(o){return Object.keys(o).sort().map(function(k){return k+"="+o[k];}).join(";");}
+function nivelesHtml(d){
+  var nc=Math.max(0,Math.min(20,parseInt(d.charola,10)||0)), ng=Math.max(0,Math.min(20,parseInt(d.ganchos,10)||0)), o=parseProf(d.profNiveles), h="";
+  if(!nc&&!ng) return '<p class="sub">Este tramo no tiene niveles.</p>';
+  function fila(k,label,def){var v=o[k]||"";return '<label class="f'+(v?' dif':'')+'">'+label+'<input data-niv="'+k+'" inputmode="decimal" value="'+esc(v)+'" placeholder="'+esc(def||"")+'"></label>';}
+  for(var g=ng;g>=1;g--) h+=fila("GA"+g,"Gancho "+g,d.profGancho||d.profundo);
+  for(var c=nc;c>=1;c--) h+=fila("CH"+c,"Charola "+c+(c===1?" (abajo)":""),d.profundo);
+  return '<p class="sub" style="margin:4px 0 8px">D&eacute;jalo vac&iacute;o si es igual a la del tramo. Escribe solo los niveles con otra profundidad (cm).</p><div class="grid">'+h+'</div>';
+}
+
 /* ---------- tramo ---------- */
 function abrirTramo(m,t){
   var lst=tramosDe(m.audit), last=lst[lst.length-1]||{}, d;
@@ -487,7 +502,7 @@ function abrirTramo(m,t){
       categoria:last.categoria||"",nomen:last.nomen||"",division:last.division||"",partido:false,catPartido:"",
       /* medidas: siempre las generales del mueble (captura principal), no las del ultimo tramo editado */
       altoBase:pick(m.altoBase,""),alto:pick(m.alto,""),ancho:pick(m.ancho,""),profundo:pick(m.profundo,""),
-      charola:pick(m.niveles,""),ganchos:pick(m.ganchos,0),altCharola:pick(m.altCharola,3),profGancho:pick(m.profGancho,"")};
+      charola:pick(m.niveles,""),ganchos:pick(m.ganchos,0),altCharola:pick(m.altCharola,3),profGancho:pick(m.profGancho,""),profNiveles:""};
   }
   tState={m:m,t:t,foto64:null,photoURL:t&&t.thumb?t.thumb:null,d:d};
   drawTramo();$("#dlgTramo").showModal();
@@ -518,6 +533,7 @@ function drawTramo(){
       campo("t_charola","Niveles de charola",d.charola,"numeric")+campo("t_altCharola","Altura de charola (cm)",d.altCharola,"decimal")+
       campo("t_ganchos","Niveles de ganchos",d.ganchos,"numeric")+campo("t_profGancho","Profundidad de gancho (cm)",d.profGancho,"decimal")+
     '</div>'+
+    '<details class="niv" id="nivBox"'+(d.profNiveles?' open':'')+'><summary>Profundidad por nivel'+(d.profNiveles?' <span class="mini">distinta</span>':' (opcional)')+'</summary><div id="nivWrap">'+nivelesHtml(d)+'</div></details>'+
     '<div class="grid" style="margin-top:8px">'+
       '<label class="check full"><input type="checkbox" id="t_part"'+(d.partido?' checked':'')+'> Tramo partido (dos categor&iacute;as)</label>'+
       '<div class="full" id="wrapCP"'+(d.partido?'':' hidden')+'><div class="sub" style="margin-bottom:4px">Categor&iacute;a partida</div>'+pickHtml("t_cpBtn",d.catPartido,cp?cp.n:"")+'</div>'+
@@ -530,7 +546,16 @@ function drawTramo(){
     d.alto=$("#t_alto").value.trim();d.altoBase=$("#t_altoBase").value.trim();d.ancho=$("#t_ancho").value.trim();d.profundo=$("#t_profundo").value.trim();
     d.charola=$("#t_charola").value.trim();d.ganchos=$("#t_ganchos").value.trim();
     d.altCharola=$("#t_altCharola").value.trim();d.profGancho=$("#t_profGancho").value.trim();
+    var o=parseProf(d.profNiveles);
+    $all("[data-niv]").forEach(function(i){var k=i.getAttribute("data-niv"),v=i.value.trim().replace(",",".");
+      if(v&&parseFloat(v)>0&&String(parseFloat(v))!==String(parseFloat(i.placeholder)))o[k]=String(parseFloat(v));else delete o[k];});
+    /* quitar niveles que ya no existen */
+    var nc=parseInt(d.charola,10)||0, ng=parseInt(d.ganchos,10)||0;
+    Object.keys(o).forEach(function(k){var n=Number(k.slice(2));if((k.slice(0,2)==="CH"&&n>nc)||(k.slice(0,2)==="GA"&&n>ng))delete o[k];});
+    d.profNiveles=joinProf(o);
   }
+  function repintarNiv(){rd();$("#nivWrap").innerHTML=nivelesHtml(d);}
+  ["#t_charola","#t_ganchos","#t_profundo","#t_profGancho"].forEach(function(id){$(id).addEventListener("change",repintarNiv);});
   tState.rd=rd;
   $("#t_catBtn").onclick=function(){rd();abrirCat(d.categoria,function(c){d.categoria=c.c;d.nomen=c.n;if(c.d)d.division=c.d;drawTramo();});};
   $("#t_cpBtn").onclick=function(){rd();abrirCat(d.catPartido,function(c){d.catPartido=c.c;drawTramo();});};
@@ -558,7 +583,7 @@ function guardarTramo(){
   var datos={audit:m.audit,id:hasId?t.id:null,localId:t?(t.localId||null):uid(),
     tramo:d.tramo,secuencia:d.secuencia,upc:d.upc,categoria:d.categoria,nomen:d.nomen,division:d.division,
     partido:d.partido,catPartido:d.catPartido,altoBase:d.altoBase,alto:d.alto,ancho:d.ancho,profundo:d.profundo,
-    charola:d.charola,ganchos:d.ganchos,altCharola:d.altCharola,profGancho:d.profGancho,foto:tState.foto64||null};
+    charola:d.charola,ganchos:d.ganchos,altCharola:d.altCharola,profGancho:d.profGancho,profNiveles:d.profNiveles||"",foto:tState.foto64||null};
   if(!datos.localId) datos.localId=uid();
   /* si ya hay un pendiente de este mismo tramo, se reemplaza (conservando la foto si no se tomo otra) */
   var i=buscarIdx(cola,function(o){return o.tipo==="tramo"&&!o.error&&((hasId&&String(o.datos.id)===String(datos.id))||(datos.localId&&o.datos.localId===datos.localId));});
